@@ -1,0 +1,19 @@
+fastapi
+uvicorn
+sqlalchemy
+pydantic
+pydantic-settings
+python-multipart
+python-dotenv
+# PDF & OCR
+pdf2image
+pytesseract
+opencv-python
+# Database
+pymongo
+# LLM
+langchain-openai
+openai
+# Utilities
+pytest
+httpx
