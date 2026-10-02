@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+*.pyo
+*.db
+nosql_fallback.json
+.env
