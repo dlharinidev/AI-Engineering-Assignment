@@ -8,12 +8,13 @@ python-dotenv
 # PDF & OCR
 pdf2image
 pytesseract
+pypdf
 opencv-python
 # Database
 pymongo
 # LLM
-langchain-openai
 openai
 # Utilities
 pytest
-httpx
+httpx2
+reportlab

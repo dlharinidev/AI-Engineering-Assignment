@@ -77,18 +77,41 @@ def generate_tests(selection_id: int, db: Session = Depends(database.get_db)):
 
 @router.get("/staleness/{selection_id}")
 def check_staleness(selection_id: int, db: Session = Depends(database.get_db)):
-    selection = db.query(models.Selection).filter(models.Selection.id == selection_id).first()
+    """Check if any node in a generation's snapshot has changed in a newer document version."""
     gen = database.generations_collection.find_one({"selection_id": selection_id})
-    
-    if not gen: return {"status": "No generation found"}
+    if not gen:
+        return {"status": "No generation found"}
 
     results = []
     for snapshot in gen["nodes_snapshot"]:
-        # Find the same logical node in the LATEST document version
-        latest_node = db.query(models.Node).join(models.Document).order_by(models.Document.version.desc()).first() # Simplified
-        # Real logic would match logical_node_id
-        
+        # Find the original node to get its logical_node_id
+        original_node = db.query(models.Node).filter(models.Node.id == snapshot["id"]).first()
+        if not original_node:
+            results.append({"node_id": snapshot["id"], "stale": None, "reason": "Node not found"})
+            continue
+
+        logical_id = original_node.logical_node_id
+
+        # Find the latest version of this same logical node across all document versions
+        latest_node = (
+            db.query(models.Node)
+            .join(models.Document)
+            .filter(models.Node.logical_node_id == logical_id)
+            .order_by(models.Document.version.desc())
+            .first()
+        )
+
+        if not latest_node:
+            results.append({"node_id": snapshot["id"], "stale": False, "reason": "Only one version"})
+            continue
+
         is_stale = snapshot["hash"] != latest_node.content_hash
-        results.append({"node_id": snapshot["id"], "stale": is_stale})
-        
+        results.append({
+            "node_id": snapshot["id"],
+            "logical_node_id": logical_id,
+            "stale": is_stale,
+            "original_hash": snapshot["hash"],
+            "latest_hash": latest_node.content_hash
+        })
+
     return results
